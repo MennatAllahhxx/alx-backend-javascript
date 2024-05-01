@@ -1,40 +1,31 @@
 const fs = require('fs');
-
 const { promisify } = require('util');
 
 const readFileAsync = promisify(fs.readFile);
 
-const readDatabase = (path) => new Promise((res, rej) => {
-  readFileAsync(path, { encoding: 'utf-8' }).then((data) => {
-    const lines = data.split('\n').filter((line) => line.trim() !== '');
+const readDatabase = (path) => new Promise((resolve, reject) => {
+  readFileAsync(path, { encoding: 'utf-8' })
+    .then((data) => {
+      const lines = data.split('\n').filter((line) => line.trim() !== '');
+      const fieldFirstNames = {};
 
-    const numStudents = lines.length - 1;
+      lines.slice(1).forEach((line) => {
+        const fields = line.split(',');
+        const firstName = fields[0];
+        const field = fields[3];
 
-    console.log(`Number of students: ${numStudents}`);
+        if (fieldFirstNames[field]) {
+          fieldFirstNames[field].push(firstName);
+        } else {
+          fieldFirstNames[field] = [firstName];
+        }
+      });
 
-    const fieldCounts = {};
-
-    lines.slice(1).forEach((line) => {
-      const fields = line.split(',');
-      const field = fields[3];
-      if (fieldCounts[field]) {
-        fieldCounts[field].push(fields[0]);
-      } else {
-        fieldCounts[field] = [fields[0]];
-      }
+      resolve(fieldFirstNames);
+    })
+    .catch(() => {
+      reject(new Error('Cannot load the database'));
     });
-
-    for (const field in fieldCounts) {
-      if (field) {
-        const count = fieldCounts[field].length;
-        const list = fieldCounts[field].join(', ');
-        console.log(`Number of students in ${field}: ${count}. List: ${list}`);
-      }
-    }
-    res();
-  }).catch(() => {
-    rej(new Error('Cannot load the database'));
-  });
 });
 
 module.exports = readDatabase;
